@@ -56,7 +56,7 @@ const CampusMap = () => {
       </button>
 
       {/* 6. The Map (The View) */}
-      <APIProvider apiKey={'AIzaSyDAGWOcRdniYbT7aVnV0WPvQMj53mk8m2Q' as string}>
+      <APIProvider apiKey={'' as string}>
         <Map
           defaultZoom={16}
           defaultCenter={{ lat: 45.5048, lng: -73.5772 }} // McGill University
