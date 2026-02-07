@@ -36,7 +36,7 @@ export default function AuthPage() {
         }
         router.push('/profile');
       } else {
-        setError(data.error || 'Something went wrong');
+        setError(data.error || 'Invalid username or password');
       }
     } catch (err) {
       setError('Failed to connect to the server');
