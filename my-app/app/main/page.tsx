@@ -17,12 +17,10 @@ import {
   ArrowLeft,
   Camera,
   Search,
-  Loader2,
   BookOpen,
   Coffee,
   Dumbbell,
   MessageCircle,
-  ChevronDown
 } from 'lucide-react';
 
 // --- Types ---
@@ -52,7 +50,7 @@ type Flag = {
   startTime: number;
   durationMinutes: number;
   status: string; // "Cramming for COMP 202"
-  vibe: 'study' | 'gym' | 'cafe' | 'chill'; // New field for the vibe category
+  vibe: 'study' | 'gym' | 'cafe' | 'chill';
 };
 
 // --- Mock Data ---
@@ -62,85 +60,29 @@ const INITIAL_CAMERA = {
   zoom: 16
 };
 
+// Default user since backend handles auth
+const CURRENT_USER: User = {
+  id: 'user-123',
+  handle: 'mcgill_student',
+  major: 'Computer Science',
+  bio: 'Just joined the garden 🌱',
+  photoUrl: null,
+  isGhost: false,
+  topSpots: []
+};
+
 // --- Components ---
 
 const Avatar = ({ url, size = 'md', className = '', fallbackText }: { url: string | null, size?: 'sm' | 'md' | 'lg' | 'xl' | '2xl', className?: string, fallbackText?: string }) => {
-  const sizePx = { sm: 'w-8 h-8', md: 'w-12 h-12', lg: 'w-20 h-20', xl: 'w-32 h-32', '2xl': 'w-40 h-40' }[size];
+  const sizePx = { sm: 'w-8 h-8', md: 'w-12 h-12', lg: 'w-20 h-20', xl: 'w-32 h-32', '2xl': 'w-40 h-40' } as const;
   
   return (
-    <div className={`rounded-full overflow-hidden bg-gray-200 border-gray-100 flex-shrink-0 flex items-center justify-center ${sizePx} ${className}`}>
+    <div className={`rounded-full overflow-hidden bg-gray-200 border-gray-100 flex-shrink-0 flex items-center justify-center ${sizePx[size]} ${className}`}>
       {url ? (
         <img src={url} alt="Profile" className="w-full h-full object-cover" />
       ) : (
         <span className="text-gray-400 font-bold text-lg">{fallbackText ? fallbackText[0] : <UserIcon />}</span>
       )}
-    </div>
-  );
-};
-
-// --- Application Logic ---
-
-const AuthScreen = ({ onLogin }: { onLogin: (user: User) => void }) => {
-  const [email, setEmail] = useState('');
-  const [step, setStep] = useState<'input' | 'verify'>('input');
-  const [isLoading, setIsLoading] = useState(false);
-
-  const handleVerify = () => {
-    setIsLoading(true);
-    setTimeout(() => {
-      onLogin({
-        id: email,
-        handle: email.split('@')[0],
-        major: 'Undeclared',
-        bio: 'Just joined the garden 🌱',
-        photoUrl: null,
-        isGhost: false,
-        topSpots: []
-      });
-    }, 1000);
-  };
-
-  return (
-    <div className="flex flex-col items-center justify-center h-full p-6 bg-white absolute inset-0 z-[5000]">
-      <div className="w-full max-w-sm text-center">
-        <div className="mb-8 flex justify-center">
-          <div className="w-24 h-24 bg-red-600 rounded-3xl flex items-center justify-center shadow-xl transform rotate-3">
-            <MapPin className="text-white w-12 h-12" />
-          </div>
-        </div>
-        <h1 className="text-4xl font-black mb-2 text-gray-900 tracking-tight">The Casual Hang</h1>
-        <p className="text-gray-500 mb-8 text-lg">Socialize without the scheduling.</p>
-
-        {step === 'input' ? (
-          <form onSubmit={(e) => { e.preventDefault(); setStep('verify'); }} className="space-y-4">
-            <input
-              type="email"
-              placeholder="firstname.lastname@mail.mcgill.ca"
-              className="w-full px-4 py-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-red-500 outline-none text-lg"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-            />
-            <button
-              type="submit"
-              className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-4 rounded-xl transition-colors shadow-lg"
-            >
-              Enter the Garden
-            </button>
-          </form>
-        ) : (
-          <div className="space-y-4">
-            <p className="text-gray-600">Check your email for the magic link!</p>
-            <button
-              onClick={handleVerify}
-              disabled={isLoading}
-              className="w-full bg-gray-900 text-white font-bold py-4 rounded-xl shadow-lg flex items-center justify-center gap-2"
-            >
-              {isLoading ? <Loader2 className="animate-spin" /> : 'Enter App'}
-            </button>
-          </div>
-        )}
-      </div>
     </div>
   );
 };
@@ -226,8 +168,8 @@ const ProfilePopup = ({ user, onClose }: { user: User, onClose: () => void }) =>
 // --- MAIN MAP COMPONENT ---
 
 const Dashboard = () => {
-  // State
-  const [user, setUser] = useState<User | null>(null);
+  // State - Initialized with default user immediately
+  const [user, setUser] = useState<User>(CURRENT_USER);
   const [myFlag, setMyFlag] = useState<Flag | null>(null);
   const [isPlanting, setIsPlanting] = useState(false);
   const [viewingProfile, setViewingProfile] = useState<User | null>(null);
@@ -326,10 +268,6 @@ const Dashboard = () => {
       }
     });
   };
-
-  if (!user) {
-    return <AuthScreen onLogin={setUser} />;
-  }
 
   return (
     <div className="relative h-screen w-screen flex flex-col overflow-hidden bg-gray-100">
