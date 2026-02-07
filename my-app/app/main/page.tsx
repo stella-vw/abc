@@ -3,7 +3,7 @@ import {APIProvider, Map, MapCameraChangedEvent} from '@vis.gl/react-google-maps
 
 const MapView = () => (
     <div style={{ width: '100vw', height: '100vh' }}>
-        <APIProvider apiKey={"AIzaSyDAGWOcRdniYbT7aVnV0WPvQMj53mk8m2Q"} 
+        <APIProvider apiKey={"PUT API KEY HERE"} 
         onLoad={() => console.log('Maps API has loaded.')}>
             <Map
                 defaultZoom={17}
