@@ -1,6 +1,7 @@
-"use client"; // This line is REQUIRED in Next.js for interactive pages
+"use client";
 
-import React, { useState, ChangeEvent } from 'react';
+import React, { useState, useEffect, ChangeEvent } from 'react';
+import Link from 'next/link';
 
 interface ProfileData {
   name: string;
@@ -13,12 +14,34 @@ interface ProfileData {
 export default function ProfilePage() {
   const [isEditing, setIsEditing] = useState<boolean>(false);
   const [profile, setProfile] = useState<ProfileData>({
-    name: "Alex Chen",
-    major: "Computer Science",
-    year: "Junior",
-    aboutMe: "Passionate about full-stack dev and AI.",
+    name: "Enter name",
+    major: "Enter major",
+    year: "Enter year",
+    aboutMe: "Tell us about yourself",
     profilePic: '/noimage.png',
   });
+
+  // 1. Load data from the database when the component mounts
+  useEffect(() => {
+    const username = localStorage.getItem("loggedUser");
+    if (username) {
+      fetch(`/api/profile/get?username=${username}`)
+        .then((res) => res.json())
+        .then((data) => {
+          // If the user has a profile in the DB, update our state
+          if (data && !data.error) {
+            setProfile({
+              name: data.name || "Enter name",
+              major: data.major || "Enter major",
+              year: data.year || "Enter year",
+              aboutMe: data.aboutMe || "Tell us about yourself",
+              profilePic: data.profilePic || '/noimage.png',
+            });
+          }
+        })
+        .catch((err) => console.error("Error fetching profile:", err));
+    }
+  }, []);
 
   const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -26,9 +49,46 @@ export default function ProfilePage() {
   };
 
   const handleImageChange = (e: ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const imageUrl = URL.createObjectURL(e.target.files[0]);
-      setProfile(prev => ({ ...prev, profilePic: imageUrl }));
+  const file = e.target.files?.[0];
+  if (file) {
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const base64String = reader.result as string;
+      setProfile(prev => ({ ...prev, profilePic: base64String }));
+    };
+    reader.readAsDataURL(file);
+  }
+};
+
+  // 2. This function handles the database save
+  const handleSave = async () => {
+    const username = localStorage.getItem("loggedUser");
+    
+    // ADD THIS LINE:
+    alert("Checking username: " + username);
+
+    if (!username) {
+      console.log("No username found. Please log in again.");
+      return;
+  }
+
+    try {
+      const response = await fetch('/api/profile/update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          username, // Required to find the right user in MongoDB
+          ...profile // Sends name, major, year, aboutMe
+        }),
+      });
+
+      if (response.ok) {
+        setIsEditing(false); // Only switch back to view mode if save worked
+      } else {
+        alert("Failed to save changes to database.");
+      }
+    } catch (error) {
+      console.error("Save error:", error);
     }
   };
 
@@ -46,7 +106,7 @@ export default function ProfilePage() {
           <input name="major" value={profile.major} onChange={handleChange} />
           <input name="year" value={profile.year} onChange={handleChange} />
           <textarea name="aboutMe" value={profile.aboutMe} onChange={handleChange} />
-          <button onClick={() => setIsEditing(false)}>Save</button>
+          <button onClick={handleSave}>Save</button>
         </div>
       ) : (
         <div style={{ marginTop: '20px' }}>
@@ -56,6 +116,18 @@ export default function ProfilePage() {
           <button onClick={() => setIsEditing(true)}>Edit Profile</button>
         </div>
       )}
+
+      <Link href="/main">
+        <button style={{ 
+          padding: '12px 24px', 
+          fontSize: '16px', 
+          cursor: 'pointer',
+          backgroundColor: '#0070f3',
+          color: 'white',
+          border: 'none',
+          borderRadius: '5px'
+        }}>Return to Map</button>
+      </Link>
     </div>
   );
 }

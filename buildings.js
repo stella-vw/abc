@@ -8,7 +8,7 @@ const CAMPUS_BUILDINGS = [
   { name: "Law Library", lat: 45.5036150963151, lng: -73.58055393341505 },
   { name: "McLennan Library", lat: 45.50324529223802, lng: -73.57596693118876},
   { name: "Redpath Libraty", lat: 45.50363630524383, lng: -73.57692179755256},
-  { name: "Schulich Library", lat: 45.50506541939511, lng:-73.57535895171594}
+  { name: "Schulich Library", lat: 45.50506541939511, lng:-73.57535895171594},
   { name: "Leacock Building", lat: 45.50436564852126, lng: -73.57798617432188 },
   { name: "Arts Building", lat: 45.50529089004143, lng:-73.57768077772403},
   { name: "MacDonald Engineering", lat: 45.50555365286042, lng: -73.57623235464658},
