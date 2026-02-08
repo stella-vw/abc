@@ -1,3 +1,5 @@
+// api route for creating and getting posts in MongoDB
+
 import { NextResponse } from 'next/server';
 import dbConnect from '../../../lib/dbconnect';
 import Post from '../../../models/Post';
@@ -7,16 +9,13 @@ export async function POST(request: Request) {
     await dbConnect();
     const body = await request.json();
 
-    // Mapping frontend fields to your Mongoose Schema
     const newPost = await Post.create({
       title: body.title,
       buildingName: body.buildingName,
       type: body.type,
       notes: body.notes,
-      location: body.location, // Should be { type: 'Point', coordinates: [lng, lat] }
-      // We use 'author' as defined in your schema (the ObjectId)
+      location: body.location, 
       author: body.authorId, 
-      // We don't need to send createdAt; the schema does it automatically!
     });
 
     return NextResponse.json(newPost, { status: 201 });
@@ -26,10 +25,8 @@ export async function POST(request: Request) {
   }
 }
 
-// Keep your GET route to fetch the pins for the map
-export async function GET() {
 
-    
+export async function GET() {
   try {
     await dbConnect();
     const posts = await Post.find({});

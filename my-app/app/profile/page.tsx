@@ -11,6 +11,7 @@ interface ProfileData {
   profilePic: string;
 }
 
+//displays profile info
 export default function ProfilePage() {
   const [isEditing, setIsEditing] = useState<boolean>(false);
   const [profile, setProfile] = useState<ProfileData>({
@@ -21,13 +22,14 @@ export default function ProfilePage() {
     profilePic: '/noimage.png',
   });
 
+  //gets all data from DB and sets profile page for the user
   useEffect(() => {
     const username = localStorage.getItem("loggedUser");
     if (username) {
       fetch(`/api/profile/get?username=${username}`)
         .then((res) => res.json())
         .then((data) => {
-          if (data && !data.error) {
+          if (data && !data.error) { // if user is new sets default values
             setProfile({
               name: data.name || "Enter name",
               major: data.major || "Enter major",
@@ -41,11 +43,13 @@ export default function ProfilePage() {
     }
   }, []);
 
+  //changing profile text data
   const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setProfile(prev => ({ ...prev, [name]: value }));
   };
 
+  //chaing profile image data
   const handleImageChange = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -57,6 +61,7 @@ export default function ProfilePage() {
     }
   };
 
+  // pushing changes to DB and exiting edit mode
   const handleSave = async () => {
     const username = localStorage.getItem("loggedUser");
     if (!username) return;

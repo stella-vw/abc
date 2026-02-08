@@ -1,3 +1,5 @@
+// updating profile info in MongoDB
+
 import { NextResponse } from 'next/server';
 import clientPromise from '../../../../lib/mongodb';
 

@@ -1,3 +1,5 @@
+// LOGIN/REGISTRATION page
+
 "use client";
 
 import React, { useState } from 'react';
@@ -30,7 +32,6 @@ export default function AuthPage() {
 
       if (response.ok) {
         localStorage.setItem("loggedUser", username);
-        // Optional: Show a success message if they just registered
         if (!isLogin) {
           alert("Account created! Now logging you in...");
         }

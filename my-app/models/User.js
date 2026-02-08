@@ -1,3 +1,5 @@
+// Sets up user model for MongDB database entry
+
 const mongoose = require('mongoose');
 
 const userSchema = new mongoose.Schema({
