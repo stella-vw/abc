@@ -13,10 +13,9 @@ export async function POST(request: Request) {
       buildingName: body.buildingName,
       type: body.type,
       notes: body.notes,
-      location: body.location, // Should be { type: 'Point', coordinates: [lng, lat] }
-      // We use 'author' as defined in your schema (the ObjectId)
-      author: body.authorId, 
-      // We don't need to send createdAt; the schema does it automatically!
+      location: body.location,
+      author: body.authorId,
+      authorPic: body.authorPic,
     });
 
     return NextResponse.json(newPost, { status: 201 });
@@ -29,7 +28,6 @@ export async function POST(request: Request) {
 // Keep your GET route to fetch the pins for the map
 export async function GET() {
 
-    
   try {
     await dbConnect();
     const posts = await Post.find({});

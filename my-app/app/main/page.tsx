@@ -23,6 +23,7 @@ import {
   Coffee,
   Dumbbell,
   MessageCircle,
+  FileUser,
 } from 'lucide-react';
 
 // --- Types ---
@@ -53,6 +54,7 @@ type Flag = {
   status: string; 
   vibe: 'study' | 'gym' | 'cafe' | 'chill';
   socmed: string;
+  authorPic?: string | null;
 };
 
 // --- Mock Data ---
@@ -316,6 +318,7 @@ const Dashboard = () => {
         counts[idx] = (counts[idx] || 0) + 1;
       }
     });
+    
 
     return Object.entries(counts)
       .map(([index, count]) => ({
@@ -327,6 +330,30 @@ const Dashboard = () => {
       .sort((a, b) => b.count - a.count)
       .slice(0, 3);
   }, [allFlags]); // Only recalculates when the map data changes
+
+  //see nearby posts
+  const [nearbySessions, setNearbySessions] = useState<Flag[]>([]);
+
+  useEffect(() => {
+    if (selectedPlace !== null && user) {
+      const building = CAMPUS_BUILDINGS[selectedPlace];
+      fetch(`/api/posts/nearby?lng=${building.lng}&lat=${building.lat}`)
+      .then(res => res.json())
+      .then((data: any[]) => { // Start with any[] from the JSON
+        // 1. Ensure user exists
+        if (!user) return;
+
+        // 2. Explicitly type 'p' as your Flag type
+        const others = data.filter((p: Flag) => {
+          // Use String() to be 100% sure the comparison works
+          return String(p.authorId) !== String(user.username);
+        });
+
+        setNearbySessions(others);
+      })
+      .catch(err => console.error("Nearby fetch error:", err));;
+    }
+  }, [selectedPlace]);
 
   // The final check before rendering
   if (!user) return <div className="h-screen w-screen flex items-center justify-center bg-gray-50 text-gray-400 font-bold">Loading OnMyWay!...</div>;
@@ -410,9 +437,9 @@ const Dashboard = () => {
             key={flag._id} 
             position={{ 
             lat: flag.location.coordinates[1], 
-            lng: flag.location.coordinates[0] 
-            }}
-        >
+            lng: flag.location.coordinates[0], 
+            }}>
+
             <div className="relative flex flex-col items-center group cursor-pointer hover:z-50">
             <div className="bg-white px-2 py-1 rounded-full shadow-md text-[10px] font-bold text-gray-800 border border-gray-100 mb-1">
                 {flag.title}
@@ -495,11 +522,38 @@ const Dashboard = () => {
                             <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Location</label>
                             <div className="relative">
                                 <label>Where are you?</label>
-                                <select value={selectedPlace} onChange={(e) => setSelectedPlace(Number(e.target.value))}>
-                                    {CAMPUS_BUILDINGS.map((loc, i) => <option key={i} value={i}>{loc.name}</option>)}
-                                </select>
+                                <select 
+                                value={selectedPlace} 
+                                onChange={(e) => {
+                                    const val = Number(e.target.value);
+                                    setSelectedPlace(val);
+                                    setNearbySessions([]); 
+                                }}
+                                className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-red-500"
+                              >
+                                {CAMPUS_BUILDINGS.map((loc, i) => (
+                                    <option key={i} value={i}>{loc.name}</option>
+                                ))}
+                              </select>
                             </div>
                         </div>
+
+                        {nearbySessions.length > 0 && (
+                        <div className="bg-blue-50 border border-blue-100 rounded-xl p-3 mb-4 flex items-center gap-3">
+                          <div className="flex -space-x-2">
+                            {nearbySessions.slice(0, 3).map((s, i) => (
+                              <Avatar 
+                              url={s.authorPic} 
+                              size="sm" 
+                              className="border-2 border-white"
+                            />
+                            ))}
+                          </div>
+                          <p className="text-xs font-medium text-blue-700">
+                            {nearbySessions.length} {nearbySessions.length === 1 ? 'person is' : 'people are'} already have sessions nearby!
+                          </p>
+                        </div>
+                        )}
 
                         {/* 2. Vibe Check (Buttons) */}
                         <div>
@@ -561,7 +615,7 @@ const Dashboard = () => {
                             </div>
                         </div>
 
-                        {/* 5. Contact Method (Static UI for now) */}
+                        {/* 5. Contact Method (Static UI for now)
                         <div>
                             <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Contact Method</label>
                                 <textarea 
@@ -571,19 +625,19 @@ const Dashboard = () => {
                                 onChange={(e) => setSocmed(e.target.value)}
                                 maxLength={80}
                                 />
-                        </div>
-                    </form>
-                </div>
+                        </div> */}
 
-                {/* Footer Action Button */}
-                <div className="p-6 border-t border-gray-100 bg-white">
-                     <button 
-                        onClick={handlePlantFlag}
-                        disabled={!selectedPlace}
-                        className={`w-full py-4 rounded-xl font-bold text-lg shadow-lg transition-all ${selectedPlace ? 'bg-red-600 text-white hover:bg-red-700' : 'bg-gray-200 text-gray-400'}`}
-                    >
-                        {selectedPlace ? 'Start Session' : 'Select a Location First'}
-                    </button>
+                        {/* Footer Action Button */}
+                        <div className="p-3 border-t border-gray-100 bg-white">
+                          <button 
+                              onClick={handlePlantFlag}
+                              disabled={!selectedPlace}
+                              className={`w-full py-4 rounded-xl font-bold text-lg shadow-lg transition-all ${selectedPlace ? 'bg-red-600 text-white hover:bg-red-700' : 'bg-gray-200 text-gray-400'}`}
+                          >
+                              {selectedPlace ? 'Start Session' : 'Select a Location First'}
+                          </button>
+                      </div>
+                    </form>
                 </div>
             </div>
         </div>
