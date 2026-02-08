@@ -412,19 +412,42 @@ const Dashboard = () => {
             lat: flag.location.coordinates[1], 
             lng: flag.location.coordinates[0] 
             }}
+            className="z-10 hover:z-50"
         >
             <div className="relative flex flex-col items-center group cursor-pointer hover:z-50">
-            <div className="bg-white px-2 py-1 rounded-full shadow-md text-[10px] font-bold text-gray-800 border border-gray-100 mb-1">
-                {flag.title}
-            </div>
-            <div className="w-10 h-10 rounded-full border-2 border-red-500 shadow-lg overflow-hidden bg-white">
-                <Avatar 
-                url={flag.authorPic} 
-                size="md" 
-                fallbackText={flag.authorName || 'U'} 
-                className="w-full h-full"
-                />
-            </div>
+              <div className="absolute bottom-16 hidden group-hover:flex flex-col items-center bg-white p-3 rounded-lg shadow-xl border border-gray-200 w-48 text-center z-50 animate-in fade-in slide-in-from-bottom-2 duration-200">
+                  <h3 className="font-bold text-sm text-gray-900 mb-2">
+                    {flag.authorName || 'Unknown User'}
+                  </h3>
+                  {flag.username && (
+                    <p className="text-xs text-gray-500 mb-2">@{flag.username}</p>
+                  )}
+                  {flag.status && (
+                    <p className="text-xs text-gray-500 mb-2">
+                      <span className="font-semibold text-gray-400">Contact:</span> {flag.status}
+                    </p>
+                  )}
+                  {flag.socmed && (
+                    <p className="text-xs text-gray-500 mb-2">
+                      <span className="font-semibold text-gray-400">Contact:</span> {flag.socmed}
+                    </p>
+                  )}
+                <div className="text-xs bg-gray-100 px-2 py-1 rounded text-gray-700 w-full">
+                  "{flag.status || flag.title}"
+                </div>
+                <div className="absolute -bottom-2 w-4 h-4 bg-white transform rotate-45 border-b border-r border-gray-200"></div>
+              </div>
+              <div className="bg-white px-2 py-1 rounded-full shadow-md text-[10px] font-bold text-gray-800 border border-gray-100 mb-1">
+                  {flag.title}
+              </div>
+              <div className="w-10 h-10 rounded-full border-2 border-red-500 shadow-lg overflow-hidden bg-white">
+                  <Avatar 
+                  url={flag.authorPic} 
+                  size="md" 
+                  fallbackText={flag.authorName || 'U'} 
+                  className="w-full h-full"
+                  />
+              </div>
             </div>
         </AdvancedMarker>
         ))}
@@ -433,8 +456,14 @@ const Dashboard = () => {
         {myFlag && (
         <AdvancedMarker 
             position={{ lat: CAMPUS_BUILDINGS[selectedPlace].lat, lng: CAMPUS_BUILDINGS[selectedPlace].lng }}
+            className="z-20 hover:z-50"
         >
             <div className="relative flex flex-col items-center group cursor-pointer hover:z-50">
+              <div className="absolute bottom-20 hidden group-hover:flex flex-col items-center bg-white p-3 rounded-lg shadow-xl border border-blue-100 w-40 text-center z-50">
+                <p className="text-xs font-bold text-blue-600 uppercase tracking-wider mb-1">Time Remaining</p>
+                <p className="text-lg font-bold text-gray-800">{myFlag.durationMinutes || 60}m</p>
+                <div className="absolute -bottom-2 w-4 h-4 bg-white transform rotate-45 border-b border-r border-gray-200"></div>
+              </div>
             <div className="bg-white px-3 py-1 rounded-full shadow-md text-[11px] font-extrabold text-gray-800 border border-gray-100 mb-1 whitespace-nowrap">
                 {myFlag.status}
             </div>
