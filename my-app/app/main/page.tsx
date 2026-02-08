@@ -552,7 +552,7 @@ const Dashboard = () => {
 
 export default function App() {
   return (
-    <APIProvider apiKey={'AIzaSyDAGWOcRdniYbT7aVnV0WPvQMj53mk8m2Q'}>
+    <APIProvider apiKey={''}>
       <Dashboard />
     </APIProvider>
   );
