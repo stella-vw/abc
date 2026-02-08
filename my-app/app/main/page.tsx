@@ -22,7 +22,7 @@ import {
   Dumbbell,
   MessageCircle,
 } from 'lucide-react';
-
+import { useRouter } from 'next/navigation';
 // --- Types ---
 
 type Location = {
@@ -38,7 +38,7 @@ type User = {
   handle: string;
   major: string;
   bio: string;
-  photoUrl: string | null;
+  profilePic: string | null;
   isGhost: boolean;
   topSpots: Location[];
 };
@@ -49,7 +49,7 @@ type Flag = {
   location: Location;
   startTime: number;
   durationMinutes: number;
-  status: string; // "Cramming for COMP 202"
+  status: string; 
   vibe: 'study' | 'gym' | 'cafe' | 'chill';
 };
 
@@ -66,7 +66,7 @@ const CURRENT_USER: User = {
   handle: 'mcgill_student',
   major: 'Computer Science',
   bio: 'Just joined the garden 🌱',
-  photoUrl: null,
+  profilePic: null,
   isGhost: false,
   topSpots: []
 };
@@ -102,7 +102,7 @@ const ProfilePage = ({ user, onSave, onBack }: { user: User, onSave: (u: User) =
       }
       const reader = new FileReader();
       reader.onload = (ev) => {
-        setFormData(prev => ({ ...prev, photoUrl: ev.target?.result as string }));
+        setFormData(prev => ({ ...prev, profilePic: ev.target?.result as string }));
       };
       reader.readAsDataURL(file);
     }
@@ -122,7 +122,7 @@ const ProfilePage = ({ user, onSave, onBack }: { user: User, onSave: (u: User) =
         <form onSubmit={(e) => { e.preventDefault(); onSave(formData); onBack(); }} className="space-y-8 max-w-lg mx-auto">
           <div className="flex flex-col items-center">
             <div className="relative group">
-               <Avatar url={formData.photoUrl} size="2xl" fallbackText={formData.handle} className="shadow-2xl border-4 border-white" />
+               <Avatar url={formData.profilePic} size="2xl" fallbackText={formData.handle} className="shadow-2xl border-4 border-white" />
                <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept="image/*" />
                <button 
                 type="button"
@@ -156,7 +156,7 @@ const ProfilePopup = ({ user, onClose }: { user: User, onClose: () => void }) =>
         </button>
       </div>
       <div className="flex flex-col items-center -mt-16 px-6 pb-6">
-        <Avatar url={user.photoUrl} size="xl" fallbackText={user.handle} className="border-4 border-white shadow-lg bg-white mb-3" />
+        <Avatar url={user.profilePic} size="xl" fallbackText={user.handle} className="border-4 border-white shadow-lg bg-white mb-3" />
         <h2 className="text-xl font-black text-gray-900 text-center">{user.handle}</h2>
         <p className="text-red-600 font-medium text-sm mb-4">{user.major}</p>
         <p className="text-gray-600 text-center text-sm leading-relaxed mb-6">"{user.bio}"</p>
@@ -169,11 +169,36 @@ const ProfilePopup = ({ user, onClose }: { user: User, onClose: () => void }) =>
 
 const Dashboard = () => {
   // State - Initialized with default user immediately
-  const [user, setUser] = useState<User>(CURRENT_USER);
+  const router = useRouter();
+  const [user, setUser] = useState<User | null>(null);
   const [myFlag, setMyFlag] = useState<Flag | null>(null);
   const [isPlanting, setIsPlanting] = useState(false);
-  const [viewingProfile, setViewingProfile] = useState<User | null>(null);
-  const [isEditingProfile, setIsEditingProfile] = useState(false);
+  
+  useEffect(() => {
+    const username = localStorage.getItem("loggedUser");
+    if (!username) {
+      router.push('/login'); // Send to login if not found
+      return;
+    }
+
+    fetch(`/api/profile/get?username=${username}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (data && !data.error) {
+          // Map your DB fields to your User type
+          setUser({
+            id: data._id || 'user-123',
+            handle: data.username || data.name,
+            major: data.major || '',
+            bio: data.aboutMe || '',
+            profilePic: data.profilePic || null, // This is your real image!
+            isGhost: false,
+            topSpots: []
+          });
+        }
+      })
+      .catch(err => console.error("Failed to load user:", err));
+  }, [router]);
   
   // Search State
   const [searchQuery, setSearchQuery] = useState('');
@@ -190,30 +215,63 @@ const Dashboard = () => {
   const placesLibrary = useMapsLibrary('places');
 
   // Handle Planting a Flag
-  const handlePlantFlag = (e: React.FormEvent) => {
+  const handlePlantFlag = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedPlace || !user) return;
 
-    const newFlag: Flag = {
-      id: `flag-${Date.now()}`,
-      userId: user.id,
-      location: selectedPlace,
-      startTime: Date.now(),
-      durationMinutes: duration,
-      status: comment || vibe, // Fallback to vibe if comment is empty
-      vibe: vibe,
+    // 1. Prepare the data for MongoDB
+    const postData = {
+      title: comment || vibe, // Use comment, fallback to vibe
+      buildingName: selectedPlace.name,
+      type: vibe,
+      notes: comment,
+      lng: selectedPlace.lng,
+      lat: selectedPlace.lat,
+      authorId: user.id // Linking the post to the logged-in user
     };
-    
-    setMyFlag(newFlag);
-    setIsPlanting(false);
-    setComment('');
-    setSearchQuery('');
-    setPredictions([]);
-    
-    // Pan map to new location
-    if (map) {
-      map.panTo({ lat: selectedPlace.lat, lng: selectedPlace.lng });
-      map.setZoom(18);
+
+    try {
+      // 2. Send to your Backend (ensure your server is running on port 3000)
+      const response = await fetch('http://localhost:3000/api/posts', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(postData),
+      });
+
+      if (response.ok) {
+        const savedPost = await response.json();
+        console.log("Post saved to MongoDB:", savedPost);
+
+        // 3. Update the UI state (only after successful DB save)
+        const newFlag: Flag = {
+          id: savedPost._id, // Use the real ID from MongoDB
+          userId: user.id,
+          location: selectedPlace,
+          startTime: Date.now(),
+          durationMinutes: duration,
+          status: postData.title,
+          vibe: vibe,
+        };
+        
+        setMyFlag(newFlag);
+        setIsPlanting(false);
+        setComment('');
+        setSearchQuery('');
+        setPredictions([]);
+
+        // Pan map
+        if (map) {
+          map.panTo({ lat: selectedPlace.lat, lng: selectedPlace.lng });
+          map.setZoom(18);
+        }
+      } else {
+        alert("Failed to save post to database.");
+      }
+    } catch (err) {
+      console.error("Error connecting to backend:", err);
+      alert("Backend server is not responding.");
     }
   };
 
@@ -269,6 +327,9 @@ const Dashboard = () => {
     });
   };
 
+if (!user) return <div className="h-screen w-screen flex items-center justify-center bg-gray-50 text-gray-400 font-bold">Loading Garden...</div>;
+
+
   return (
     <div className="relative h-screen w-screen flex flex-col overflow-hidden bg-gray-100">
       
@@ -288,8 +349,8 @@ const Dashboard = () => {
             >
                 <Ghost size={18} />
             </button>
-            <button onClick={() => setIsEditingProfile(true)}>
-                <Avatar url={user.photoUrl} size="md" fallbackText={user.handle} className="shadow-md border-2 border-white" />
+            <button onClick={() => router.push('/profile')}>
+                <Avatar url={user.profilePic || '/noimage.png/' } size="md" fallbackText={user.handle} className="shadow-md border-2 border-white" />
             </button>
         </div>
       </div>
@@ -307,7 +368,6 @@ const Dashboard = () => {
             {myFlag && !user.isGhost && (
                 <AdvancedMarker 
                     position={{ lat: myFlag.location.lat, lng: myFlag.location.lng }}
-                    onClick={() => setIsEditingProfile(true)}
                 >
                    {/* Custom HTML Pin */}
                     <div className="relative flex flex-col items-center group cursor-pointer hover:z-50">
@@ -315,7 +375,7 @@ const Dashboard = () => {
                             {myFlag.status}
                         </div>
                         <div className="w-12 h-12 rounded-full border-4 border-white shadow-lg overflow-hidden bg-white relative z-10">
-                            <Avatar url={user.photoUrl} size="lg" fallbackText={user.handle} className="w-full h-full" />
+                            <Avatar url={user.profilePic} size="lg" fallbackText={user.handle} className="w-full h-full" />
                         </div>
                         <div className="bg-blue-600 text-white text-[9px] px-2 py-0.5 rounded-full -mt-2 relative z-20 font-bold tracking-wide shadow-sm">
                             YOU
@@ -328,7 +388,7 @@ const Dashboard = () => {
       </div>
 
       {/* 3. Floating Action Button (FAB) */}
-      {!isPlanting && !isEditingProfile && (
+      {!isPlanting && (
         <div className="absolute bottom-8 right-6 z-20">
             {!myFlag && !user.isGhost ? (
                 <button 
@@ -479,9 +539,6 @@ const Dashboard = () => {
         </div>
       )}
 
-      {/* Pages & Popups */}
-      {isEditingProfile && user && <ProfilePage user={user} onSave={setUser} onBack={() => setIsEditingProfile(false)} />}
-      {viewingProfile && <ProfilePopup user={viewingProfile} onClose={() => setViewingProfile(null)} />}
     </div>
   );
 };
