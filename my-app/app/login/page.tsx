@@ -36,7 +36,11 @@ export default function AuthPage() {
         }
         router.push('/profile');
       } else {
+<<<<<<< HEAD
         setError(data.error || 'Invalid username or password');
+=======
+        setError(data.error || 'Something went wrong');
+>>>>>>> c8514d7 (Revert "fixed .env bugs")
       }
     } catch (err) {
       setError('Failed to connect to the server');

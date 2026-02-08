@@ -49,6 +49,7 @@ type Flag = {
   durationMinutes: number;
   status: string; 
   vibe: 'study' | 'gym' | 'cafe' | 'chill';
+  socmed: string;
 };
 
 // --- Mock Data ---
@@ -195,6 +196,7 @@ const Dashboard = () => {
   const [comment, setComment] = useState('');
   const [vibe, setVibe] = useState<'study' | 'gym' | 'cafe' | 'chill'>('study');
   const [duration, setDuration] = useState(60);
+  const [socmed, setSocmed] = useState("");
 
   // Map Hooks
   const map = useMap();
@@ -261,6 +263,27 @@ const Dashboard = () => {
     } catch (err) {
       console.error("Error connecting to backend:", err);
       alert("Backend server is not responding.");
+    const newFlag: Flag = {
+      id: `flag-${Date.now()}`,
+      userId: user.id,
+      location: selectedPlace,
+      startTime: Date.now(),
+      durationMinutes: duration,
+      status: comment || vibe, // Fallback to vibe if comment is empty
+      vibe: vibe,
+      socmed: socmed,
+    };
+    
+    setMyFlag(newFlag);
+    setIsPlanting(false);
+    setComment('');
+    setSearchQuery('');
+    setPredictions([]);
+    
+    // Pan map to new location
+    if (map) {
+      map.panTo({ lat: selectedPlace.lat, lng: selectedPlace.lng });
+      map.setZoom(18);
     }
   };
 
@@ -529,11 +552,13 @@ if (!user) return <div className="h-screen w-screen flex items-center justify-ce
                         {/* 5. Contact Method (Static UI for now) */}
                         <div>
                             <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Contact Method</label>
-                            <div className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl flex justify-between items-center cursor-not-allowed opacity-70">
-                                <span className="text-sm font-medium text-gray-700">Don't share contact</span>
-                                <div className="w-4 h-4 bg-black rounded-full"></div>
-                            </div>
-                            <p className="text-[10px] text-gray-400 mt-2">Add socials in your profile to share them here.</p>
+                                <textarea 
+                                placeholder="Provide a contact method."
+                                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500 outline-none text-sm min-h-[10px]"
+                                value={socmed}
+                                onChange={(e) => setSocmed(e.target.value)}
+                                maxLength={80}
+                                />
                         </div>
                     </form>
                 </div>
