@@ -46,7 +46,7 @@ type User = {
 
 type Flag = {
   id: string;
-  userId: string;
+  authorId: string;
   buildingIndex: number;
   startTime: number;
   durationMinutes: number;
@@ -259,11 +259,11 @@ const Dashboard = () => {
         
         const newFlag: Flag = {
           id: savedPost._id,
-          userId: user.username,
+          authorId: user.username,
           buildingIndex: selectedPlace,
           startTime: Date.now(),
           durationMinutes: duration,
-          status: postData.title,
+          status: savedPost.title,
           vibe: vibe,
           socmed: socmed,
         };
@@ -288,7 +288,7 @@ const Dashboard = () => {
   }; 
 
   // The final check before rendering
-  if (!user) return <div className="h-screen w-screen flex items-center justify-center bg-gray-50 text-gray-400 font-bold">Loading Garden...</div>;
+  if (!user) return <div className="h-screen w-screen flex items-center justify-center bg-gray-50 text-gray-400 font-bold">Loading OnMyWay!...</div>;
 
   return (
     <div className="relative h-screen w-screen flex flex-col overflow-hidden bg-gray-100">
@@ -315,7 +315,16 @@ const Dashboard = () => {
          
 
         {/* A. Render ALL Existing Pins from Database */}
-        {allFlags.map((flag) => (
+        {allFlags
+            .filter((flag) => {
+                // 1. Convert everything to strings to prevent ID vs String mismatches
+                const flagAuthorId = String(flag.authorId || flag.author || "");
+                const myId = String(user?.username || "");
+
+                // 2. If they match, this is ME, so return false to hide from "All Flags"
+                return flagAuthorId !== myId;
+            })
+            .map((flag) => (
         <AdvancedMarker 
             key={flag._id} 
             position={{ 

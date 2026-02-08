@@ -13,7 +13,6 @@ export default function Home() {
 
   return (
     <div className="h-screen w-screen flex items-center justify-center bg-white">
-      <p className="text-gray-400 animate-pulse">Redirecting to OnMyWay!...</p>
     </div>
   );
 }
