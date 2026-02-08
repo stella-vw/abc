@@ -499,7 +499,7 @@ const Dashboard = () => {
 export default function App() {
   return (
     // This is the key you provided for Google Maps (starting with AIza...m2Q)
-    <APIProvider apiKey="AIzaSyDAGWOcRdniYbT7aVnV0WPvQMj53mk8m2Q">
+    <APIProvider apiKey="">
       <Dashboard/>
     </APIProvider>
   );
