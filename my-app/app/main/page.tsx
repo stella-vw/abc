@@ -10,7 +10,6 @@ import {
 } from '@vis.gl/react-google-maps';
 import {
   MapPin,
-  Ghost,
   User as UserIcon,
   X,
   Plus,
@@ -22,7 +21,7 @@ import {
   Dumbbell,
   MessageCircle,
 } from 'lucide-react';
-
+import { useRouter } from 'next/navigation';
 // --- Types ---
 
 type Location = {
@@ -34,12 +33,11 @@ type Location = {
 };
 
 type User = {
-  id: string;
+  username: string;
   handle: string;
   major: string;
   bio: string;
-  photoUrl: string | null;
-  isGhost: boolean;
+  profilePic: string | null;
   topSpots: Location[];
 };
 
@@ -49,7 +47,7 @@ type Flag = {
   location: Location;
   startTime: number;
   durationMinutes: number;
-  status: string; // "Cramming for COMP 202"
+  status: string; 
   vibe: 'study' | 'gym' | 'cafe' | 'chill';
 };
 
@@ -58,17 +56,6 @@ type Flag = {
 const INITIAL_CAMERA = {
   center: { lat: 45.5048, lng: -73.5772 }, // McGill
   zoom: 16
-};
-
-// Default user since backend handles auth
-const CURRENT_USER: User = {
-  id: 'user-123',
-  handle: 'mcgill_student',
-  major: 'Computer Science',
-  bio: 'Just joined the garden 🌱',
-  photoUrl: null,
-  isGhost: false,
-  topSpots: []
 };
 
 // --- Components ---
@@ -102,7 +89,7 @@ const ProfilePage = ({ user, onSave, onBack }: { user: User, onSave: (u: User) =
       }
       const reader = new FileReader();
       reader.onload = (ev) => {
-        setFormData(prev => ({ ...prev, photoUrl: ev.target?.result as string }));
+        setFormData(prev => ({ ...prev, profilePic: ev.target?.result as string }));
       };
       reader.readAsDataURL(file);
     }
@@ -122,7 +109,7 @@ const ProfilePage = ({ user, onSave, onBack }: { user: User, onSave: (u: User) =
         <form onSubmit={(e) => { e.preventDefault(); onSave(formData); onBack(); }} className="space-y-8 max-w-lg mx-auto">
           <div className="flex flex-col items-center">
             <div className="relative group">
-               <Avatar url={formData.photoUrl} size="2xl" fallbackText={formData.handle} className="shadow-2xl border-4 border-white" />
+               <Avatar url={formData.profilePic} size="2xl" fallbackText={formData.handle} className="shadow-2xl border-4 border-white" />
                <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept="image/*" />
                <button 
                 type="button"
@@ -156,7 +143,7 @@ const ProfilePopup = ({ user, onClose }: { user: User, onClose: () => void }) =>
         </button>
       </div>
       <div className="flex flex-col items-center -mt-16 px-6 pb-6">
-        <Avatar url={user.photoUrl} size="xl" fallbackText={user.handle} className="border-4 border-white shadow-lg bg-white mb-3" />
+        <Avatar url={user.profilePic} size="xl" fallbackText={user.handle} className="border-4 border-white shadow-lg bg-white mb-3" />
         <h2 className="text-xl font-black text-gray-900 text-center">{user.handle}</h2>
         <p className="text-red-600 font-medium text-sm mb-4">{user.major}</p>
         <p className="text-gray-600 text-center text-sm leading-relaxed mb-6">"{user.bio}"</p>
@@ -169,11 +156,35 @@ const ProfilePopup = ({ user, onClose }: { user: User, onClose: () => void }) =>
 
 const Dashboard = () => {
   // State - Initialized with default user immediately
-  const [user, setUser] = useState<User>(CURRENT_USER);
+  const router = useRouter();
+  const [user, setUser] = useState<User | null>(null);
   const [myFlag, setMyFlag] = useState<Flag | null>(null);
   const [isPlanting, setIsPlanting] = useState(false);
-  const [viewingProfile, setViewingProfile] = useState<User | null>(null);
-  const [isEditingProfile, setIsEditingProfile] = useState(false);
+  
+  useEffect(() => {
+    const username = localStorage.getItem("loggedUser");
+    if (!username) {
+      router.push('/login'); // Send to login if not found
+      return;
+    }
+
+    fetch(`/api/profile/get?username=${username}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (data && !data.error) {
+          // Map your DB fields to your User type
+          setUser({
+            username: data._id.toString() || 'user-123',
+            handle: data.username || data.name,
+            major: data.major || '',
+            bio: data.aboutMe || '',
+            profilePic: data.profilePic || null,
+            topSpots: []
+          });
+        }
+      })
+      .catch(err => console.error("Failed to load user:", err));
+  }, [router]);
   
   // Search State
   const [searchQuery, setSearchQuery] = useState('');
@@ -190,30 +201,66 @@ const Dashboard = () => {
   const placesLibrary = useMapsLibrary('places');
 
   // Handle Planting a Flag
-  const handlePlantFlag = (e: React.FormEvent) => {
+  const handlePlantFlag = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedPlace || !user) return;
 
-    const newFlag: Flag = {
-      id: `flag-${Date.now()}`,
-      userId: user.id,
-      location: selectedPlace,
-      startTime: Date.now(),
-      durationMinutes: duration,
-      status: comment || vibe, // Fallback to vibe if comment is empty
-      vibe: vibe,
+    // 1. Prepare the data for MongoDB
+    const postData = {
+      title: comment || vibe, 
+      buildingName: selectedPlace.name,
+      type: vibe,
+      location: {
+        type: 'Point',
+        coordinates: [selectedPlace.lng, selectedPlace.lat]
+      },
+      authorId: user.username,     // This is the ID/Username
+      authorName: user.handle,     // Store the name for the label
+      authorPic: user.profilePic   // Store the picture URL directly!
     };
-    
-    setMyFlag(newFlag);
-    setIsPlanting(false);
-    setComment('');
-    setSearchQuery('');
-    setPredictions([]);
-    
-    // Pan map to new location
-    if (map) {
-      map.panTo({ lat: selectedPlace.lat, lng: selectedPlace.lng });
-      map.setZoom(18);
+
+    try {
+      // 2. Send to your Backend (ensure your server is running on port 3000)
+      const response = await fetch('http://localhost:3000/api/posts', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(postData),
+      });
+
+      if (response.ok) {
+        const savedPost = await response.json();
+        console.log("Post saved to MongoDB:", savedPost);
+
+        // 3. Update the UI state (only after successful DB save)
+        const newFlag: Flag = {
+          id: savedPost._id, // Use the real ID from MongoDB
+          userId: user.username,
+          location: selectedPlace,
+          startTime: Date.now(),
+          durationMinutes: duration,
+          status: postData.title,
+          vibe: vibe,
+        };
+        
+        setMyFlag(newFlag);
+        setIsPlanting(false);
+        setComment('');
+        setSearchQuery('');
+        setPredictions([]);
+
+        // Pan map
+        if (map) {
+          map.panTo({ lat: selectedPlace.lat, lng: selectedPlace.lng });
+          map.setZoom(18);
+        }
+      } else {
+        alert("Failed to save post to database.");
+      }
+    } catch (err) {
+      console.error("Error connecting to backend:", err);
+      alert("Backend server is not responding.");
     }
   };
 
@@ -245,6 +292,24 @@ const Dashboard = () => {
     });
   }, [searchQuery, placesLibrary, map]);
 
+const [allFlags, setAllFlags] = useState<any[]>([]);
+
+useEffect(() => {
+const fetchFlags = async () => {
+    try {
+    const res = await fetch('/api/posts');
+    const data = await res.json();
+    if (Array.isArray(data)) {
+        setAllFlags(data);
+    }
+    } catch (err) {
+    console.error("Error loading pins:", err);
+    }
+};
+
+fetchFlags();
+}, []);
+
   const handleSelectPrediction = (placeId: string) => {
     if (!placesLibrary || !map) return;
 
@@ -269,6 +334,9 @@ const Dashboard = () => {
     });
   };
 
+if (!user) return <div className="h-screen w-screen flex items-center justify-center bg-gray-50 text-gray-400 font-bold">Loading Garden...</div>;
+
+
   return (
     <div className="relative h-screen w-screen flex flex-col overflow-hidden bg-gray-100">
       
@@ -280,70 +348,75 @@ const Dashboard = () => {
             </div>
             <span className="font-bold text-gray-800 pr-2 hidden sm:block">The Casual Hang</span>
         </div>
-
-        <div className="pointer-events-auto flex gap-3">
-             <button 
-                onClick={() => setUser({...user, isGhost: !user.isGhost})}
-                className={`flex items-center gap-2 px-4 py-3 rounded-full text-sm font-bold transition-all shadow-md ${user.isGhost ? 'bg-gray-900 text-white' : 'bg-white text-gray-600'}`}
-            >
-                <Ghost size={18} />
-            </button>
-            <button onClick={() => setIsEditingProfile(true)}>
-                <Avatar url={user.photoUrl} size="md" fallbackText={user.handle} className="shadow-md border-2 border-white" />
-            </button>
-        </div>
       </div>
 
       {/* 2. Google Map */}
-      <div className="w-full h-full">
-        <Map
-          defaultZoom={16}
-          defaultCenter={INITIAL_CAMERA.center}
-          mapId="DEMO_MAP_ID" 
-          disableDefaultUI={true}
-          className="w-full h-full"
+    <div className="w-full h-full">
+    <Map
+        defaultZoom={16}
+        defaultCenter={INITIAL_CAMERA.center}
+        mapId="DEMO_MAP_ID" 
+        disableDefaultUI={true}
+        className="w-full h-full"
+    >
+        {/* A. Render ALL Existing Pins from Database */}
+        {allFlags.map((flag) => (
+        <AdvancedMarker 
+            key={flag._id} 
+            position={{ 
+            lat: flag.location.coordinates[1], 
+            lng: flag.location.coordinates[0] 
+            }}
         >
-            {/* Render My Flag */}
-            {myFlag && !user.isGhost && (
-                <AdvancedMarker 
-                    position={{ lat: myFlag.location.lat, lng: myFlag.location.lng }}
-                    onClick={() => setIsEditingProfile(true)}
-                >
-                   {/* Custom HTML Pin */}
-                    <div className="relative flex flex-col items-center group cursor-pointer hover:z-50">
-                        <div className="bg-white px-3 py-1 rounded-full shadow-md text-[11px] font-extrabold text-gray-800 border border-gray-100 mb-1 whitespace-nowrap">
-                            {myFlag.status}
-                        </div>
-                        <div className="w-12 h-12 rounded-full border-4 border-white shadow-lg overflow-hidden bg-white relative z-10">
-                            <Avatar url={user.photoUrl} size="lg" fallbackText={user.handle} className="w-full h-full" />
-                        </div>
-                        <div className="bg-blue-600 text-white text-[9px] px-2 py-0.5 rounded-full -mt-2 relative z-20 font-bold tracking-wide shadow-sm">
-                            YOU
-                        </div>
-                        <div className="w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[8px] border-t-white absolute top-[calc(100%-20px)] shadow-sm"></div>
-                    </div>
-                </AdvancedMarker>
-            )}
-        </Map>
-      </div>
+            <div className="relative flex flex-col items-center group cursor-pointer hover:z-50">
+            <div className="bg-white px-2 py-1 rounded-full shadow-md text-[10px] font-bold text-gray-800 border border-gray-100 mb-1">
+                {flag.title}
+            </div>
+            <div className="w-10 h-10 rounded-full border-2 border-red-500 shadow-lg overflow-hidden bg-white">
+                <Avatar 
+                url={flag.authorPic} 
+                size="md" 
+                fallbackText={flag.authorName || 'U'} 
+                className="w-full h-full"
+                />
+            </div>
+            </div>
+        </AdvancedMarker>
+        ))}
+
+        {/* B. Render My "Active" Flag (The local blue 'YOU' marker) */}
+        {myFlag && (
+        <AdvancedMarker 
+            position={{ lat: myFlag.location.lat, lng: myFlag.location.lng }}
+        >
+            <div className="relative flex flex-col items-center group cursor-pointer hover:z-50">
+            <div className="bg-white px-3 py-1 rounded-full shadow-md text-[11px] font-extrabold text-gray-800 border border-gray-100 mb-1 whitespace-nowrap">
+                {myFlag.status}
+            </div>
+            <div className="w-12 h-12 rounded-full border-4 border-white shadow-lg overflow-hidden bg-white relative z-10">
+                <Avatar url={user.profilePic} size="lg" fallbackText={user.handle} className="w-full h-full" />
+            </div>
+            <div className="bg-blue-600 text-white text-[9px] px-2 py-0.5 rounded-full -mt-2 relative z-20 font-bold tracking-wide shadow-sm">
+                YOU
+            </div>
+            </div>
+        </AdvancedMarker>
+        )}
+    </Map>
+    </div>
 
       {/* 3. Floating Action Button (FAB) */}
-      {!isPlanting && !isEditingProfile && (
+      {!isPlanting && (
         <div className="absolute bottom-8 right-6 z-20">
-            {!myFlag && !user.isGhost ? (
+            {!myFlag &&  (
                 <button 
                     onClick={() => setIsPlanting(true)}
                     className="bg-red-600 hover:bg-red-700 text-white p-5 rounded-full shadow-2xl flex items-center justify-center transform hover:scale-105 transition-all"
                 >
                     <Plus size={32} />
                 </button>
-            ) : (
-                user.isGhost && (
-                    <div className="bg-gray-900/80 backdrop-blur text-white px-6 py-3 rounded-full shadow-xl font-medium text-sm">
-                        Ghost Mode Active 👻
-                    </div>
-                )
-            )}
+            )  
+            }
         </div>
       )}
 
@@ -479,9 +552,6 @@ const Dashboard = () => {
         </div>
       )}
 
-      {/* Pages & Popups */}
-      {isEditingProfile && user && <ProfilePage user={user} onSave={setUser} onBack={() => setIsEditingProfile(false)} />}
-      {viewingProfile && <ProfilePopup user={viewingProfile} onClose={() => setViewingProfile(null)} />}
     </div>
   );
 };
@@ -491,7 +561,7 @@ const Dashboard = () => {
 export default function App() {
   return (
     // This is the key you provided for Google Maps (starting with AIza...m2Q)
-    <APIProvider apiKey="AIzaSyDAGWOcRdniYbT7aVnV0WPvQMj53mk8m2Q">
+    <APIProvider apiKey="API KEY">
       <Dashboard />
     </APIProvider>
   );

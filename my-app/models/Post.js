@@ -1,7 +1,8 @@
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 const postSchema = new mongoose.Schema({
   title: String,
+  buildingName: String,
   type: String,
   notes: String,
   location: {
@@ -9,13 +10,18 @@ const postSchema = new mongoose.Schema({
     coordinates: [Number] // [longitude, latitude]
   },
   author: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  authorId: String,   // Added these to match your Dashboard data
+  authorName: String, 
+  authorPic: String,
   createdAt: { 
     type: Date, 
     default: Date.now,
-    index: {expires : 60} } // posts expire after 60 seconds
+    index: { expires: 3600 } 
+  }
 });
 
-// This index is crucial for map-based searches
+// Create the 2dsphere index for geo-queries
 postSchema.index({ location: '2dsphere' });
 
-module.exports = mongoose.model('Post', postSchema);
+const Post = mongoose.models.Post || mongoose.model('Post', postSchema);
+export default Post;
