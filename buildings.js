@@ -1,4 +1,4 @@
-const CAMPUS_BUILDINGS = [
+export const CAMPUS_BUILDINGS = [
   { name: "McMed", lat: 45.50303299833591, lng: -73.5822537913886 },
   { name: "Stewart Bio", lat: 45.502849207884324, lng: -73.58146749701545 },
   { name: "Education Building", lat:  45.50458192601548, lng: -73.58026341021584 },

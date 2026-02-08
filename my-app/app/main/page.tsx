@@ -1,5 +1,4 @@
-"use client";
-import {APIProvider, Map, MapCameraChangedEvent} from '@vis.gl/react-google-maps';
+import CampusMap from './mapview';
 
 const MapView = () => (
     <div style={{ width: '100vw', height: '100vh' }}>
