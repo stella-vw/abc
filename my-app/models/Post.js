@@ -2,7 +2,7 @@ import mongoose from 'mongoose';
 
 const postSchema = new mongoose.Schema({
   title: String,
-  buildingName: String,
+  buildingName: Number,
   type: String,
   notes: String,
   location: {
@@ -11,7 +11,6 @@ const postSchema = new mongoose.Schema({
   },
   author: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   authorId: String,   // Added these to match your Dashboard data
-  authorName: String, 
   authorPic: String,
   createdAt: { 
     type: Date, 
