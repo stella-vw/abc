@@ -1,44 +1,19 @@
-import Link from 'next/link';
+"use client"; // Required for hooks
+
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 
 export default function Home() {
+  const router = useRouter();
+
+  useEffect(() => {
+    // Immediately redirect to your dashboard/main page
+    router.replace('/main'); 
+  }, [router]);
+
   return (
-    <div style={{ padding: '50px', textAlign: 'center', fontFamily: 'sans-serif' }}>
-      <h1>Home Page</h1>
-      <p>Click the button below to view your profile.</p>
-      
-      <Link href="/profile">
-        <button style={{ 
-          padding: '12px 24px', 
-          fontSize: '16px', 
-          cursor: 'pointer',
-          backgroundColor: '#0070f3',
-          color: 'white',
-          border: 'none',
-          borderRadius: '5px'
-        }}>
-          Go to My Profile
-        </button>
-      </Link>
-
-      <h1>Login Page</h1>
-      <p>Click the button below to login.</p>
-      
-      <Link href="/login">
-        <button style={{ 
-          padding: '12px 24px', 
-          fontSize: '16px', 
-          cursor: 'pointer',
-          backgroundColor: '#0070f3',
-          color: 'white',
-          border: 'none',
-          borderRadius: '5px'
-        }}>
-          Go to Login
-        </button>
-      </Link>
-    
-      
+    <div className="h-screen w-screen flex items-center justify-center bg-white">
+      <p className="text-gray-400 animate-pulse">Redirecting to OnMyWay!...</p>
     </div>
-
   );
 }

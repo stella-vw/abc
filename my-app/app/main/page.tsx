@@ -189,6 +189,30 @@ const Dashboard = () => {
       })
       .catch(err => console.error("Failed to load user:", err));
   }, [router]);
+
+    // 1. Add this useEffect to fetch all posts from the DB
+    useEffect(() => {
+    const fetchAllPosts = async () => {
+        try {
+        // Use your actual API endpoint
+        const response = await fetch('/api/posts'); 
+        if (response.ok) {
+            const data = await response.json();
+            // MongoDB returns an array; set it to state
+            setAllFlags(data);
+        }
+        } catch (err) {
+        console.error("Failed to fetch posts from database:", err);
+        }
+    };
+
+    // Run immediately on load
+    fetchAllPosts();
+
+    // Refresh every 15 seconds so the map feels "live"
+    const interval = setInterval(fetchAllPosts, 15000);
+    return () => clearInterval(interval);
+    }, []);
   
   // Search State
 //   const [searchQuery, setSearchQuery] = useState('');
@@ -224,7 +248,7 @@ const Dashboard = () => {
     };
 
     try {
-      const response = await fetch('http://localhost:3000/api/posts', {
+      const response = await fetch('/api/posts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(postData),
@@ -475,7 +499,7 @@ const Dashboard = () => {
 export default function App() {
   return (
     // This is the key you provided for Google Maps (starting with AIza...m2Q)
-    <APIProvider apiKey"">
+    <APIProvider apiKey="">
       <Dashboard/>
     </APIProvider>
   );
