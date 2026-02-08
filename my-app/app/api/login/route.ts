@@ -8,7 +8,11 @@ export async function POST(request: Request) {
     const db = client.db("test"); // Change this to your DB name
 
     // 1. Find the user
+<<<<<<< HEAD
     const user = await db.collection("users").findOne({ username});
+=======
+    const user = await db.collection("users").findOne({ username: username });
+>>>>>>> c8514d7 (Revert "fixed .env bugs")
 
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 401 });
