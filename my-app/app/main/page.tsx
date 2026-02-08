@@ -68,7 +68,7 @@ const INITIAL_CAMERA = {
 
 const Avatar = ({ url, size = 'md', className = '', fallbackText }: { url: string | null, size?: 'sm' | 'md' | 'lg' | 'xl' | '2xl', className?: string, fallbackText?: string }) => {
   const sizePx = { sm: 'w-8 h-8', md: 'w-12 h-12', lg: 'w-20 h-20', xl: 'w-32 h-32', '2xl': 'w-40 h-40' } as const;
-  
+
   return (
     <div className={`rounded-full overflow-hidden bg-gray-200 border-gray-100 flex-shrink-0 flex items-center justify-center ${sizePx[size]} ${className}`}>
       {url ? (
@@ -127,7 +127,7 @@ const ProfilePage = ({ user, onSave, onBack }: { user: User, onSave: (u: User) =
             </div>
             <p className="text-sm text-gray-500 mt-4 font-medium">Tap icon to change photo</p>
           </div>
-          
+
           <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 space-y-6">
              <input type="text" value={formData.handle} onChange={e => setFormData({...formData, handle:e.target.value})} placeholder="Handle" className="w-full px-4 py-3 border rounded-xl" />
              <input type="text" value={formData.major} onChange={e => setFormData({...formData, major:e.target.value})} placeholder="Major" className="w-full px-4 py-3 border rounded-xl" />
@@ -166,7 +166,7 @@ const Dashboard = () => {
   const [myFlag, setMyFlag] = useState<Flag | null>(null);
   const [isPlanting, setIsPlanting] = useState(false);
   const [allFlags, setAllFlags] = useState<any[]>([]);
-  
+
   useEffect(() => {
     const username = localStorage.getItem("loggedUser");
     if (!username) {
@@ -234,12 +234,12 @@ const Dashboard = () => {
   const interval = setInterval(fetchAllPosts, 5000);
   return () => clearInterval(interval);
 }, [user]); // Add user to dependencies
-  
+
   // Search State
 //   const [searchQuery, setSearchQuery] = useState('');
 //   const [predictions, setPredictions] = useState<google.maps.places.AutocompletePrediction[]>([]);
   const [selectedPlace, setSelectedPlace] = useState(0);
-  
+
   // New Flag State
   const [comment, setComment] = useState('');
   const [vibe, setVibe] = useState<'study' | 'gym' | 'cafe' | 'chill'>('study');
@@ -277,7 +277,7 @@ const Dashboard = () => {
 
       if (response.ok) {
         const savedPost = await response.json();
-        
+
         const newFlag: Flag = {
           id: savedPost._id,
           authorId: user.username,
@@ -288,7 +288,7 @@ const Dashboard = () => {
           vibe: vibe,
           socmed: socmed,
         };
-        
+
         setMyFlag(newFlag);
         setIsPlanting(false);
         setComment('');
@@ -311,7 +311,7 @@ const Dashboard = () => {
   //trending
   const trending = React.useMemo(() => {
     const counts: { [key: number]: number } = {};
-    
+
     allFlags.forEach((flag) => {
       const idx = flag.buildingName;
       if (idx !== undefined) {
@@ -360,7 +360,7 @@ const Dashboard = () => {
 
   return (
     <div className="relative h-screen w-screen flex flex-col overflow-hidden bg-gray-100">
-      
+
       {/* 1. Header (Floating) */}
       <div className="absolute top-4 left-4 right-4 z-10 flex justify-between items-start pointer-events-none">
         <div className="pointer-events-auto bg-white/90 backdrop-blur shadow-md p-2 rounded-2xl flex items-center gap-2">
@@ -381,7 +381,7 @@ const Dashboard = () => {
               </div>
               <h3 className="text-xs font-black uppercase tracking-tighter text-gray-500">Trending Now</h3>
             </div>
-            
+
             <div className="space-y-2">
               {trending.map((item, i) => (
                 <button 
@@ -422,7 +422,7 @@ const Dashboard = () => {
         disableDefaultUI={true}
         className="w-full h-full"
     >
-         
+
 
         {/* A. Render ALL Existing Pins from Database */}
         {allFlags
@@ -490,9 +490,9 @@ const Dashboard = () => {
             )  
             }
         </div>
-         
+
       )}
-    
+
       {/*profile button*/}
       <div className="absolute top-8 right-6 z-20">
             <button onClick={() => router.push('/profile')}>
@@ -505,7 +505,7 @@ const Dashboard = () => {
       {isPlanting && (
         <div className="absolute inset-0 z-30 bg-black/40 backdrop-blur-sm flex flex-col justify-end sm:justify-center p-4">
             <div className="bg-white w-full max-w-lg mx-auto rounded-3xl shadow-2xl overflow-hidden animate-in slide-in-from-bottom-10 fade-in duration-300">
-                
+
                 {/* Modal Header */}
                 <div className="flex justify-between items-center px-6 py-4 border-b border-gray-100">
                     <h2 className="text-xl font-black text-gray-900">New Session</h2>
@@ -513,10 +513,10 @@ const Dashboard = () => {
                         <X size={20} /> 
                     </button>
                 </div>
-                
+
                 <div className="p-6 overflow-y-auto max-h-[80vh]">
                     <form onSubmit={handlePlantFlag} className="space-y-6">
-                        
+
                         {/* 1. Location Input */}
                         <div>
                             <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Location</label>
@@ -543,7 +543,7 @@ const Dashboard = () => {
                           <div className="flex -space-x-2">
                             {nearbySessions.slice(0, 3).map((s, i) => (
                               <Avatar 
-                              url={s.authorPic} 
+                              url={s.authorPic ?? null } 
                               size="sm" 
                               className="border-2 border-white"
                             />
@@ -639,6 +639,17 @@ const Dashboard = () => {
                       </div>
                     </form>
                 </div>
+
+
+
+
+
+
+
+
+
+
+
             </div>
         </div>
       )}
