@@ -14,14 +14,9 @@ export async function POST(request: Request) {
       buildingName: body.buildingName,
       type: body.type,
       notes: body.notes,
-<<<<<<< HEAD
       location: body.location,
       author: body.authorId,
       authorPic: body.authorPic,
-=======
-      location: body.location, 
-      author: body.authorId, 
->>>>>>> 8f3c859976d1ea37919ade08d2a170e27ec1fee1
     });
 
     return NextResponse.json(newPost, { status: 201 });
@@ -32,10 +27,7 @@ export async function POST(request: Request) {
 }
 
 
-<<<<<<< HEAD
-=======
 export async function GET() {
->>>>>>> 8f3c859976d1ea37919ade08d2a170e27ec1fee1
   try {
     await dbConnect();
     const posts = await Post.find({});
