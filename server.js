@@ -21,8 +21,8 @@ const Post = require('./models/Post');
 
 // 4. Database Connection
 mongoose.connect(process.env.MONGO_URI)
-  .then(() => console.log("🚀 MongoDB Connected Successfully!"))
-  .catch((err) => console.log("❌ MongoDB Connection Failed:", err));
+  .then(() => console.log("MongoDB Connected Successfully!"))
+  .catch((err) => console.log("MongoDB Connection Failed:", err));
 
 // 5. ROUTES
 
